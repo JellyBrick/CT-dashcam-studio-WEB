@@ -1,4 +1,4 @@
-name: Deploy production and dev to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -12,7 +12,8 @@ permissions:
   pages: write
   id-token: write
 
-# A Pages deployment replaces the entire site. Always publish both branches together.
+# A Pages deployment replaces the whole site, so every run publishes main at the
+# root and dev under /dev/ together.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -21,53 +22,73 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout production source
-        uses: actions/checkout@v4
+      - name: Check out main
+        uses: actions/checkout@v7
         with:
           ref: main
           path: production-source
 
-      - name: Checkout dev source
-        uses: actions/checkout@v4
+      - name: Check out dev
+        uses: actions/checkout@v7
         with:
           ref: dev
           path: dev-source
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            production-source/package-lock.json
-            dev-source/package-lock.json
+          package_json_file: production-source/package.json
 
-      - name: Build production from main
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: production-source/.nvmrc
+          cache: pnpm
+          cache-dependency-path: production-source/pnpm-lock.yaml
+
+      - name: Build main for the site root
         working-directory: production-source
         env:
           VITE_BASE_PATH: /CT-dashcam-studio-WEB/
         run: |
-          npm ci
-          npm test
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm build
           node scripts/write-deployment-info.mjs production
           mkdir -p ../site_out
           cp -r dist/. ../site_out/
 
-      - name: Build test site from dev
+      # dev may still use npm until it is merged with main; a failing dev build
+      # must not take the production site down with it.
+      - name: Build dev for /dev/
+        id: dev
+        continue-on-error: true
         working-directory: dev-source
         env:
           VITE_BASE_PATH: /CT-dashcam-studio-WEB/dev/
         run: |
-          npm ci
-          npm test
-          npm run build
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+            pnpm test
+            pnpm build
+          else
+            npm ci
+            npm test
+            npm run build
+          fi
           node scripts/write-deployment-info.mjs dev
           mkdir -p ../site_out/dev
           cp -r dist/. ../site_out/dev/
 
-      - name: Upload both sites as one Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Report a skipped dev site
+        if: steps.dev.outcome == 'failure'
+        run: echo "::warning::The dev branch failed to build, so this deployment has no /dev/ site."
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
         with:
           path: site_out
 
@@ -80,4 +101,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

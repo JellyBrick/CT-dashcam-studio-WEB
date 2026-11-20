@@ -1,0 +1,50 @@
+{
+  "de": {
+    "title": "CT Dashcam Studio",
+    "desc": "Kostenloses Webtool zum synchronen Abspielen und Bearbeiten von TeslaCam-Videos mit Fahrzeugdaten-Einblendungen.",
+    "ogTitle": "CT Dashcam Studio",
+    "ogDesc": "Tesla-Dashcam-Videos im Browser ansehen und bearbeiten"
+  },
+  "fr": {
+    "title": "CT Dashcam Studio",
+    "desc": "Outil web gratuit pour lire, synchroniser et modifier des vidéos TeslaCam avec incrustations de télémétrie.",
+    "ogTitle": "CT Dashcam Studio",
+    "ogDesc": "Lecteur et éditeur de vidéos TeslaCam dans le navigateur"
+  },
+  "es": {
+    "title": "CT Dashcam Studio",
+    "desc": "Herramienta web gratuita para reproducir, sincronizar y editar vídeos TeslaCam con superposiciones de telemetría.",
+    "ogTitle": "CT Dashcam Studio",
+    "ogDesc": "Visor y editor de vídeos TeslaCam en el navegador"
+  },
+  "ko": {
+    "title": "CT Dashcam Studio",
+    "desc": "테슬라 블랙박스(TeslaCam) 영상을 재생하거나 편집할 수 있는 무료웹 도구입니다.",
+    "ogTitle": "CT Dashcam Studio",
+    "ogDesc": "웹기반 테슬라 블랙박스 뷰어/편집기"
+  },
+  "en": {
+    "title": "CT Dashcam Studio",
+    "desc": "Free web tool to view, sync, and edit Tesla Dashcam (TeslaCam) videos with telemetry overlays.",
+    "ogTitle": "CT Dashcam Studio",
+    "ogDesc": "Web-based Tesla Dashcam Viewer & Editor"
+  },
+  "ja": {
+    "title": "CT Dashcam Studio",
+    "desc": "テスラのドライブレコーダー(TeslaCam)映像を同期再生・編集できる無料Webツールです。",
+    "ogTitle": "CT Dashcam Studio",
+    "ogDesc": "Webベースのテスラ ドライブレコーダー ビューアー／エディター"
+  },
+  "zh-CN": {
+    "title": "CT Dashcam Studio",
+    "desc": "免费网页版特斯拉行车记录仪(TeslaCam)多镜头同步播放与视频导出编辑工具。",
+    "ogTitle": "CT Dashcam Studio",
+    "ogDesc": "基于网页的特斯拉行车记录仪播放与编辑工具"
+  },
+  "zh-TW": {
+    "title": "CT Dashcam Studio",
+    "desc": "免費網頁版特斯拉行車記錄器(TeslaCam)多鏡頭同步播放與影片匯出編輯工具。",
+    "ogTitle": "CT Dashcam Studio",
+    "ogDesc": "基於網頁的特斯拉行車記錄器播放與編輯工具"
+  }
+}

@@ -2,32 +2,65 @@
 
 CT Dashcam Studio Web original project code is offered under GPL-3.0-only only where the owner holds the necessary rights. This does not replace the licenses below or clear uncertain artwork. See LICENSE_AUDIT.md.
 
-## Distributed runtime code: mp4-muxer 5.2.2
+## Distributed runtime code: Mediabunny 1.66.2
 
-Source: https://github.com/Vanilagy/mp4-muxer
-Installed version locked in package-lock.json: 5.2.2. MIT, copyright 2023 Vanilagy. Its original notice follows in full. Do not relicense this component as original project code.
+Source: https://github.com/Vanilagy/mediabunny
+Installed version locked in pnpm-lock.yaml: 1.66.2. Mozilla Public License 2.0 (MPL-2.0), copyright (c) 2026-present Vanilagy and contributors. The video export code bundles Mediabunny without modification, and loads it only when an export starts.
 
-MIT License
+MPL-2.0 applies file by file. The source form of every Mediabunny file is available at the link above and in the npm package mediabunny@1.66.2. If these files are ever modified, the modified files must stay under MPL-2.0 and their source must be offered the same way. Mediabunny carries no "Incompatible With Secondary Licenses" notice, so section 3.3 of the MPL allows it to be distributed together with this GPL-3.0-only project. The full license text is in licenses/mediabunny-MPL-2.0.txt. Do not relicense this component as original project code.
 
-Copyright (c) 2023 Vanilagy
+## Distributed runtime code: viewer interface libraries
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The React interface bundles the following packages. Versions are locked in pnpm-lock.yaml. Each original notice is preserved in full in licenses/ and on the deployed third-party legal page. Do not relicense these components as original project code.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+| Package | Version | License | Notice file |
+| --- | --- | --- | --- |
+| react | 19.3.1 | MIT | licenses/react-MIT.txt |
+| react-dom | 19.3.1 | MIT | licenses/react-dom-MIT.txt |
+| scheduler | 0.28.0 | MIT | licenses/scheduler-MIT.txt |
+| @base-ui/react | 1.9.0 | MIT | licenses/base-ui-react-MIT.txt |
+| @base-ui/utils | 0.5.0 | MIT | licenses/base-ui-utils-MIT.txt |
+| @floating-ui/core | 1.8.0 | MIT | licenses/floating-ui-core-MIT.txt |
+| @floating-ui/dom | 1.8.0 | MIT | licenses/floating-ui-dom-MIT.txt |
+| @floating-ui/react-dom | 2.1.9 | MIT | licenses/floating-ui-react-dom-MIT.txt |
+| @floating-ui/utils | 0.2.12 | MIT | licenses/floating-ui-utils-MIT.txt |
+| reselect | 5.3.0 | MIT | licenses/reselect-MIT.txt |
+| use-sync-external-store | 1.7.0 | MIT | licenses/use-sync-external-store-MIT.txt |
+| i18next | 27.1.3 | MIT | licenses/i18next-MIT.txt |
+| react-i18next | 18.0.2 | MIT | licenses/react-i18next-MIT.txt |
+| html-parse-stringify | 4.0.1 | MIT | licenses/html-parse-stringify-MIT.txt |
+| @babel/runtime | 8.1.2 | MIT | licenses/babel-runtime-MIT.txt |
+| zustand | 5.1.0 | MIT | licenses/zustand-MIT.txt |
+| es-toolkit | 1.53.2 | MIT | licenses/es-toolkit-MIT.txt |
+| @tanstack/react-query | 5.108.2 | MIT | licenses/tanstack-react-query-MIT.txt |
+| @tanstack/query-core | 5.108.2 | MIT | licenses/tanstack-query-core-MIT.txt |
+| motion | 14.14.0 | MIT | licenses/motion-MIT.txt |
+| framer-motion | 14.14.0 | MIT | licenses/framer-motion-MIT.txt |
+| motion-dom | 14.14.0 | MIT | licenses/motion-dom-MIT.txt |
+| motion-utils | 14.7.0 | MIT | licenses/motion-utils-MIT.txt |
+| @jellybrick/react-solid-flow | 1.2.1 | MIT | licenses/react-solid-flow-MIT.txt |
+| the-new-css-reset | 1.11.3 | MIT | licenses/the-new-css-reset-MIT.txt |
+| virtua | 0.55.0 | MIT | licenses/virtua-MIT.txt |
+| zod | 4.6.7 | MIT | licenses/zod-MIT.txt |
+| react-markdown | 10.1.0 | MIT | licenses/runtime-dependencies.txt |
+| remark-gfm | 4.0.1 | MIT | licenses/runtime-dependencies.txt |
+| react-hotkeys-hook | 5.4.0 | MIT | licenses/runtime-dependencies.txt |
+| @use-gesture/react | 10.3.1 | MIT | licenses/runtime-dependencies.txt |
+| i18next-browser-languagedetector | 8.3.1 | MIT | licenses/runtime-dependencies.txt |
+| @bufbuild/protobuf | 2.17.0 | Apache-2.0 AND BSD-3-Clause | licenses/runtime-dependencies.txt |
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+licenses/runtime-dependencies.txt holds the original license text of every package bundled into the site, including the packages these libraries depend on (for example the unified, remark, micromark, mdast and hast packages behind react-markdown) and the Workbox runtime that the service worker build bundles from @vite-pwa/workbox-swkit. It is generated from `pnpm licenses list --prod`; regenerate it whenever runtime dependencies change. @bufbuild/protobuf publishes its terms in source headers instead of a license file: Apache-2.0 (Buf Technologies) for most files and BSD-3-Clause (Google) for the wire-format code; both headers and the Apache-2.0 text are reproduced in that file.
+| sonner | 2.0.8 | MIT | licenses/sonner-MIT.txt |
+| lucide-react | 1.73.0 | ISC | licenses/lucide-react-ISC.txt |
+| clsx | 2.1.1 | MIT | licenses/clsx-MIT.txt |
+| tailwind-merge | 3.7.0 | MIT | licenses/tailwind-merge-MIT.txt |
+| class-variance-authority | 0.7.1 | Apache-2.0 | licenses/class-variance-authority-Apache-2.0.txt |
+| tw-animate-css | 1.4.0 | MIT | licenses/tw-animate-css-MIT.txt |
+
+## Distributed font: Pretendard 1.3.9
+
+Source: https://github.com/orioncactus/pretendard
+Copyright (c) 2021 Kil Hyung-jin, with Reserved Font Name Pretendard. The variable dynamic-subset WOFF2 files are bundled unmodified and are licensed under the SIL Open Font License, Version 1.1, preserved in full in licenses/pretendard-OFL-1.1.txt. The OFL covers the font files only; it does not apply to the rest of this project.
 
 ## Python predecessor and ports
 
@@ -58,9 +91,9 @@ SOFTWARE.
 
 ## Build-generated code and development tools
 
-Vite 5.4.21 is a development/build tool, not an application runtime dependency. Its modulepreload polyfill is emitted into the distributed viewer bundle. Vite's supplied license and all of its included third-party notices are preserved in licenses/vite-NOTICES.txt and in the deployed third-party legal page. esbuild 0.21.5 transforms/minifies the bundle; its MIT notice is preserved in licenses/esbuild-MIT.txt. Rollup 4.64.10 is a build tool, not separately shipped as a browser library. The full locked dependency inventory and actual versions are in LICENSE_DEPENDENCIES.json and LICENSE_AUDIT.md; do not infer runtime distribution from npm's dev flag alone.
+Vite 8.3.8 is a development/build tool, not an application runtime dependency. It bundles with Rolldown 1.2.19, which may emit small runtime helpers and the modulepreload polyfill into the distributed viewer bundle. Vite's supplied license with its bundled third-party notices is preserved in licenses/vite-NOTICES.txt and Rolldown's MIT notice in licenses/rolldown-MIT.txt. Tailwind CSS, TypeScript, oxlint, oxfmt, Vitest and the React Compiler only run at build or test time. The locked dependency versions are in pnpm-lock.yaml.
 
-mp4-muxer also declares @types/dom-webcodecs 0.1.19 and @types/wicg-file-system-access 2020.9.8, MIT copyright Microsoft Corporation. These type declarations are erased and are not JavaScript runtime components. Their notices are retained in licenses/dom-webcodecs-MIT.txt and licenses/wicg-file-system-access-MIT.txt for source/dependency redistribution.
+Mediabunny also declares @types/dom-webcodecs 0.1.13 and @types/dom-mediacapture-transform 0.1.12, MIT copyright Microsoft Corporation. These type declarations are erased and are not JavaScript runtime components. Their notices are retained in licenses/dom-webcodecs-MIT.txt and licenses/dom-mediacapture-transform-MIT.txt for source/dependency redistribution.
 
 ## OpenStreetMap
 
@@ -72,4 +105,4 @@ Google Analytics gtag.js is fetched from Google only after analytics consent on 
 
 ## Artwork, branding, copied source and test fixtures
 
-Icon PNG/ICO/SVG generations, public/models/steering_hud.png and visual brand references require the provenance review in LICENSE_AUDIT.md. No Valve/Portal or Tesla rights are purportedly granted by this notice. The introductory road SVG was created in repository source, but that fact alone is not proof of legal clearance. Test timing MP4s were generated with FFmpeg test patterns; they are test-only and not published by the Pages build. No font binary is bundled. Source history and AI assistance are not substitutes for third-party copyright review.
+Icon PNG/ICO/SVG generations and visual brand references require the provenance review in LICENSE_AUDIT.md. No Valve/Portal or Tesla rights are purportedly granted by this notice. Test timing MP4s were generated with FFmpeg test patterns; they are test-only and not published by the Pages build. The only bundled font is Pretendard, listed above. Source history and AI assistance are not substitutes for third-party copyright review.

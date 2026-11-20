@@ -1,0 +1,142 @@
+.tut-road {
+  background: linear-gradient(#8493a0 0 39%, #596059 40% 48%, #3c4245 49%);
+}
+.tut-road::before,
+.tut-road::after {
+  content: '';
+  position: absolute;
+  top: 48%;
+  width: 1.5px;
+  height: 90%;
+  background: #e5dfbd;
+  transform-origin: top;
+}
+.tut-road::before {
+  left: 46%;
+  transform: rotate(30deg);
+}
+.tut-road::after {
+  left: 54%;
+  transform: rotate(-30deg);
+}
+.tut-road i {
+  position: absolute;
+  top: 19%;
+  width: 12%;
+  height: 30%;
+  background: #5b666b;
+}
+.tut-road i:nth-child(1) {
+  left: 7%;
+}
+.tut-road i:nth-child(2) {
+  left: 22%;
+  top: 14%;
+  height: 35%;
+}
+.tut-road i:nth-child(3) {
+  right: 10%;
+}
+.tut-road span {
+  position: absolute;
+  top: 57%;
+  left: 43%;
+  width: 14%;
+  height: 15%;
+  border-radius: 3px;
+  background: #d9d6cf;
+}
+
+.tut-in {
+  animation: tut-in 0.4s var(--ease-fade) both;
+}
+.tut-out {
+  opacity: 0;
+  visibility: hidden;
+  animation: tut-out 0.3s var(--ease-fade) both;
+}
+.tut-tap {
+  opacity: 0;
+  animation: tut-tap 0.6s ease-out both;
+}
+.tut-select {
+  animation: tut-select 0.3s var(--ease-fade) both;
+}
+.tut-select-text {
+  animation: tut-select-text 0.3s var(--ease-fade) both;
+}
+.tut-press {
+  animation: tut-press 0.2s var(--ease-fade) both;
+}
+.tut-range {
+  animation: tut-range 1.4s linear both;
+}
+.tut-playhead {
+  animation: tut-playhead 1.4s linear both;
+}
+.tut-fill {
+  animation: tut-fill 2.2s linear both;
+}
+
+@keyframes tut-in {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+@keyframes tut-out {
+  from {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+@keyframes tut-tap {
+  0% {
+    opacity: 0;
+    scale: 0.4;
+  }
+  40% {
+    opacity: 0.5;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.4;
+  }
+}
+@keyframes tut-select {
+  from {
+    background-color: transparent;
+  }
+}
+@keyframes tut-select-text {
+  from {
+    color: var(--foreground);
+  }
+}
+@keyframes tut-press {
+  from {
+    background-color: var(--solid);
+  }
+}
+@keyframes tut-range {
+  from {
+    width: 0;
+  }
+}
+@keyframes tut-playhead {
+  from {
+    left: 18%;
+  }
+}
+@keyframes tut-fill {
+  from {
+    scale: 0 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-demo * {
+    animation: none !important;
+  }
+}

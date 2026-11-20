@@ -1,0 +1,198 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "import",
+    "unicorn",
+    "oxc",
+    "promise",
+    "node",
+    "react",
+    "react-hooks",
+    "jsx-a11y"
+  ],
+  "jsPlugins": [
+    "eslint-plugin-perfectionist",
+    {
+      "name": "unicorn-js",
+      "specifier": "eslint-plugin-unicorn"
+    },
+    "eslint-plugin-react-refresh"
+  ],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "func-style": ["error", "expression"],
+    "prefer-arrow-callback": "error",
+    "import/no-default-export": "error",
+    "import/first": "error",
+    "import/no-duplicates": "error",
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    "no-void": "error",
+    "no-empty": "off",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/require-await": "error",
+    "unicorn-js/filename-case": [
+      "error",
+      {
+        "case": "kebabCase"
+      }
+    ],
+    "perfectionist/sort-imports": [
+      "warn",
+      {
+        "type": "natural",
+        "order": "asc",
+        "groups": ["builtin", "external", "internal", ["parent", "sibling", "index"], "type"],
+        "newlinesBetween": 1
+      }
+    ],
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "react/jsx-no-useless-fragment": "warn",
+    "react-refresh/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
+    "react/set-state-in-effect": "error",
+    "react/refs": "error",
+    "react/purity": "error",
+    "react/preserve-manual-memoization": "error",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/control-has-associated-label": "error"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"],
+  "overrides": [
+    {
+      "files": ["src/components/atoms/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/molecules/**", "**/organisms/**", "**/templates/**", "**/pages/**"],
+                "message": "An atom must not import a molecule, organism, template, or page. Keep dependencies within the atom layer, or move this component to a higher layer."
+              },
+              {
+                "group": ["@/studio/**", "@/i18n/**", "react-i18next", "i18next"],
+                "message": "An atom must not import app state or translations. Pass text and data as props instead."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/components/molecules/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/organisms/**", "**/templates/**", "**/pages/**"],
+                "message": "A molecule must not import an organism, template, or page. Keep dependencies within the atom and molecule layers, or move this component to a higher layer."
+              },
+              {
+                "group": ["@/studio/**", "@/i18n/**", "react-i18next", "i18next"],
+                "message": "A molecule must not import app state or translations. Pass text and data as props instead."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/components/organisms/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@base-ui/react", "@base-ui/react/*"],
+                "message": "An organism must not import @base-ui/react directly. Use an atom or molecule wrapper instead."
+              },
+              {
+                "group": ["**/templates/**", "**/pages/**"],
+                "message": "An organism must not import a template or page. Handle page composition and layout in a template or page instead."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/components/templates/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@base-ui/react", "@base-ui/react/*"],
+                "message": "A template must not import @base-ui/react directly. Use an atom or molecule wrapper instead."
+              },
+              {
+                "group": ["**/pages/**"],
+                "message": "A template must not import a page. Pass content from the page into the template as props instead."
+              },
+              {
+                "group": ["@/studio/**"],
+                "message": "A template must not import app state at runtime. Use a type-only import, or pass layout slots as props instead.",
+                "allowTypeImports": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/components/pages/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@base-ui/react", "@base-ui/react/*"],
+                "message": "A page must not import @base-ui/react directly. Use an organism built on atom or molecule wrappers instead."
+              },
+              {
+                "group": ["**/atoms/**", "**/molecules/**"],
+                "message": "A page must not import an atom or molecule directly. Compose only template and organism components here, and move detailed UI into an organism."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/components/atoms/**", "src/components/molecules/**"],
+      "rules": {
+        "react-refresh/only-export-components": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "vite.config.ts", "scripts/**", "public/**"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    }
+  ]
+}

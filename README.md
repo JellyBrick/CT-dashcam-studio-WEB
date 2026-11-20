@@ -28,7 +28,7 @@
    - 타임라인 및 클립 탐색기 트리 내 선택 구간 실시간 하이라이트 표시
 
 4. **WebCodecs 초고속 하드웨어 가속 인코딩**
-   - 브라우저 내장 하드웨어 비디오 인코더(`VideoEncoder` + `mp4-muxer`) 활용
+   - 브라우저 내장 하드웨어 비디오 인코더를 [Mediabunny](https://github.com/Vanilagy/mediabunny)로 다뤄 MP4 파일 생성
    - FHD (1920x1080), QHD (2560x1440), 4K UHD (3840x2160) 및 최대 8.0배속 고속 렌더링 지원
 
 5. **클라이언트 사이드 기기 성능 진단 (Device Tier)**
@@ -43,10 +43,10 @@
 
 ```bash
 # 의존성 패키지 설치
-npm install
+pnpm install
 
 # 로컬 개발 서버 실행 (기본 포트: 5173)
-npm run dev
+pnpm dev
 ```
 
 브라우저에서 `http://localhost:5173` 접속 후 테슬라 USB 드라이브의 `TeslaCam` 폴더를 드래그 앤 드롭하거나 좌측 상단의 **TeslaCam 폴더 지정** 버튼을 클릭하세요.
@@ -54,7 +54,7 @@ npm run dev
 ### 프로덕션 빌드
 
 ```bash
-npm run build
+pnpm build
 ```
 
 빌드 결과물은 `dist/` 폴더에 정적 웹 파일로 생성됩니다.
@@ -85,18 +85,13 @@ npm run build
 일반 수정은 `dev`에서 진행하고 테스트 주소에서 확인한 뒤, 정식 반영할 때 `main`에 병합합니다.
 두 브랜치 중 하나에 푸시하면 GitHub Actions가 각 브랜치를 별도로 체크아웃하고 검사·빌드합니다.
 Pages는 사이트 전체를 교체하므로, 매번 `main` 빌드를 루트에, `dev` 빌드를 `/dev/`에 함께 배포합니다.
+`dev` 빌드가 실패하면 경고만 남기고 `main` 사이트는 그대로 배포합니다. 이때 그 배포에는 `/dev/` 사이트가 빠집니다.
+저장소 Settings → Pages의 Source는 GitHub Actions로 설정되어 있어야 합니다.
 각 주소의 `deployment.json`에서 배포 채널·소스 브랜치·커밋을 확인할 수 있습니다.
 
 자동 배포 서버에서는 외부 원본 영상이 필요한 SEI 통합 검사를 명시적으로 건너뛰고 나머지 검사를 실행합니다.
 원본 영상이 있는 개발 PC에서는 해당 통합 검사도 실행합니다. 다른 경로의 원본을 사용하려면
 `CT_TEST_MP4`와 `CT_PYTHON_SOURCE` 환경 변수로 영상 파일과 Python 비교 소스 경로를 지정할 수 있습니다.
-
-
-## Introduction / 소개
-
-[English](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/intro/en/) · [한국어](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/intro/kr/) · [日本語](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/intro/jp/) · [简体中文](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/intro/zh-cn/) · [繁體中文](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/intro/zh-tw/) · [Deutsch](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/intro/de/) · [Français](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/intro/fr/) · [Español](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/intro/es/)
-
-소개 페이지는 `intro/`의 공통 템플릿·번역으로 생성됩니다. `npm run dev`와 `npm run build`가 자동으로 `scripts/build-intro.mjs`를 실행합니다. 최상위 URL은 뷰어이며, DEV 소개 페이지는 검색 제외(`noindex`) 상태로 배포됩니다.
 
 
 ## License, privacy and analytics
@@ -105,13 +100,12 @@ Original project code is licensed **GPL-3.0-only** where the project owner holds
 
 - [GPLv3 text](LICENSE), [Third-party notices](THIRD_PARTY_NOTICES.md), [License/provenance audit](LICENSE_AUDIT.md)
 - [Privacy Policy](PRIVACY.md), [Data-flow audit](PRIVACY_DATA_FLOW.md), [Repository discovery](COMPLIANCE_DISCOVERY.md), [Verification](COMPLIANCE_VERIFICATION.md)
-- [DEV privacy policy](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/dev/legal/privacy.html)
-- [DEV GPL text](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/dev/legal/license.html)
-- [DEV third-party licenses](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/dev/legal/third-party.html)
-- [DEV privacy settings](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/dev/legal/index.html)
+- [DEV privacy policy](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/dev/?legal=privacy)
+- [DEV GPL text](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/dev/?legal=license)
+- [DEV third-party licenses](https://mhsong282828221212123123123.github.io/CT-dashcam-studio-WEB/dev/?legal=third-party)
 
-The viewer retains GA ID `G-E05V74Q9Q7` using worldwide Basic Consent Mode v2 opt-in. Intro/legal pages share the origin-local choice but introduce no new tracking. Rejection does not gate editing or maps. The compact Privacy & Licenses entry reopens preferences. Legal documents are canonical English; navigation and consent explanations cover all eight UI languages. `scripts/build-intro.mjs` also generates `public/legal/` from the reviewed sources. Generated files are ignored; no Markdown paths are used for deployed UI links.
+The viewer retains GA ID `G-E05V74Q9Q7` using worldwide Basic Consent Mode v2 opt-in. Rejection does not gate editing or maps. The compact Privacy & Licenses entry reopens preferences. Legal documents open in a dialog inside the viewer, read straight from the Markdown files in this repository, and can be linked with `?legal=privacy`, `license`, `third-party`, `audit` or `data-flow`. They are canonical English; navigation and consent explanations cover all eight UI languages.
 
-Build: `npm ci`, `npm test`, `npm run build` (includes TypeScript checking). Use `VITE_BASE_PATH=/CT-dashcam-studio-WEB/dev/` for the DEV artifact or `/CT-dashcam-studio-WEB/` for a production-path validation build. There is no configured lint command. The existing dual-branch workflow remains unchanged. The owner authorized promotion to main on 2026-11-01. Both production and DEV builds include the shared consent and legal pages under their respective base paths.
+Build: `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm build` (includes TypeScript checking). Use `VITE_BASE_PATH=/CT-dashcam-studio-WEB/dev/` for the DEV artifact or `/CT-dashcam-studio-WEB/` for a production-path validation build. Lint and format with `pnpm lint` (oxlint, type-aware) and `pnpm format` (oxfmt). The existing dual-branch workflow remains unchanged. The owner authorized promotion to main on 2026-11-01. Both production and DEV builds include the consent notice and legal documents.
 
-For redistribution, retain LICENSE, THIRD_PARTY_NOTICES.md and licenses/, and provide the corresponding source/build scripts for the exact artifact revision. Generated legal pages link to that revision's source. Resolve the documented artwork/upstream and OSM attribution issues before claiming complete international release clearance.
+For redistribution, retain LICENSE, THIRD_PARTY_NOTICES.md and licenses/, and provide the corresponding source/build scripts for the exact artifact revision. The license tab links to that revision's source. Resolve the documented artwork/upstream and OSM attribution issues before claiming complete international release clearance.
