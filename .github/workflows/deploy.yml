@@ -23,11 +23,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Check out the reviewed PR 1 commit
+      - name: Check out the PR 1 preview fixes
         uses: actions/checkout@v4
         with:
-          repository: JellyBrick/CT-dashcam-studio-WEB
-          ref: 3ba01ac5981fe16cab5046c985a3cffa5305b735
+          ref: b9e4a427dab1736b8297f02d78bfec87f709a989
           persist-credentials: false
 
       - name: Set up Node.js for the preview
