@@ -13,13 +13,56 @@ permissions:
   id-token: write
 
 # A Pages deployment replaces the whole site, so every run publishes main at the
-# root and dev under /dev/ together.
+# root, dev under /dev/ and the PR 1 preview under /preview/pr-1/ together.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the PR 1 preview fixes
+        uses: actions/checkout@v4
+        with:
+          ref: 471c571f5f90646806c289e7071aa22170b42198
+          persist-credentials: false
+
+      - name: Set up Node.js for the preview
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Build PR 1 for /preview/pr-1/
+        env:
+          VITE_BASE_PATH: /CT-dashcam-studio-WEB/preview/pr-1/
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm build
+          node --input-type=module <<'JS'
+          import { execFileSync } from 'node:child_process';
+          import { writeFileSync } from 'node:fs';
+          const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          const info = { channel: 'preview', pullRequest: 1, commit };
+          writeFileSync('dist/deployment.json', JSON.stringify(info, null, 2) + '\n');
+          JS
+
+      - name: Upload the preview build
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-1-preview
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
   build:
+    needs: build-preview
     runs-on: ubuntu-latest
     steps:
       - name: Check out main
@@ -83,6 +126,12 @@ jobs:
       - name: Report a skipped dev site
         if: steps.dev.outcome == 'failure'
         run: echo "::warning::The dev branch failed to build, so this deployment has no /dev/ site."
+
+      - name: Add the PR 1 preview
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-1-preview
+          path: site_out/preview/pr-1/
 
       - name: Configure Pages
         uses: actions/configure-pages@v6
