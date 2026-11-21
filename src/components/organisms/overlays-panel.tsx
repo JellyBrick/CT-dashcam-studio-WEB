@@ -6,11 +6,13 @@ import { ScrollArea } from '@/components/atoms/scroll-area';
 import { PanelHeader } from '@/components/molecules/panel-header';
 import { SliderField } from '@/components/molecules/slider-field';
 import { SwitchRow } from '@/components/molecules/switch-row';
+import { type PrivacyOption, setPrivacyOption } from '@/studio/privacy';
 import { hasPillarCameras, setOption, useStudio } from '@/studio/store';
 
 import { plainLabel } from './panel-tabs';
 
 import type { RenderOptions } from '@/core/renderer';
+import type { TranslationKey } from '@/i18n';
 
 type OverlayKey = keyof Pick<
   RenderOptions,
@@ -40,6 +42,37 @@ const OVERLAY_KEYS: OverlayKey[] = [
   'rear_correction',
   'qr',
 ];
+
+const PRIVACY_OPTIONS: { key: PrivacyOption; label: TranslationKey; tip?: TranslationKey }[] = [
+  { key: 'face_blur', label: 'chk_face_blur' },
+  { key: 'plate_blur', label: 'chk_plate_blur' },
+  { key: 'plate_enhance', label: 'chk_plate_enhance', tip: 'tip_plate_enhance' },
+];
+
+const PrivacyOptions = () => {
+  const { t } = useTranslation();
+  const options = useStudio((state) => state.options);
+  const loading = useStudio((state) => state.privacyLoading);
+  return (
+    <div className="flex flex-col">
+      <For each={PRIVACY_OPTIONS}>
+        {({ key, label, tip }) => (
+          <SwitchRow
+            key={key}
+            label={t(label)}
+            title={tip && t(tip)}
+            description={tip && t(tip)}
+            checked={options[key]}
+            disabled={loading}
+            onCheckedChange={(checked) => {
+              setPrivacyOption(key, checked).catch(reportError);
+            }}
+          />
+        )}
+      </For>
+    </div>
+  );
+};
 
 const ImageAdjust = () => {
   const { t } = useTranslation();
@@ -139,6 +172,8 @@ export const OverlaysPanel = () => {
             )}
           </For>
         </div>
+        <h3 className="px-3 pt-8 pb-4 text-title text-muted-foreground">{t('group_privacy')}</h3>
+        <PrivacyOptions />
         <h3 className="px-3 pt-8 pb-4 text-title text-muted-foreground">{t('group_adjust')}</h3>
         <div className="pb-6">
           <ImageAdjust />

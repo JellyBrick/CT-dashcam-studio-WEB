@@ -25,9 +25,13 @@ CT Dashcam Studio Web is a single-page browser app for playing and editing Tesla
   - `exporter.ts`: export with Mediabunny (decodes frames with `CanvasSink`, encodes with `CanvasSource`/`Output`)
   - `sei-decoder.ts` and `sei-worker.ts`: SEI telemetry (Mediabunny MP4 demux and `@bufbuild/protobuf`), runs in a Web Worker
   - `clip-scanner.ts`: groups files into clips/folders
+  - `motion-scanner.ts`: sentry motion detection on 160×90 grayscale samples (Mediabunny `CanvasSink`)
+  - `privacy-models.ts`: ONNX Runtime Web (WebGPU, falling back to WebAssembly) running the YuNet face model and the D-FINE nano vehicle model from `src/assets/models`
+  - `privacy-filter.ts`: face/plate mosaic and plate sharpening for preview (async detection plus tracking) and export (a look-ahead pass that records boxes, then mosaics each frame)
+  - `box-tracker.ts`, `plate-finder.ts`, `plate-enhancer.ts`, `image-ops.ts`: tracker and look-ahead timeline, Korean plate checks inside vehicle boxes, plate sharpening, and the small OpenCV-like helpers they share
   - `map-loader.ts`: OSM tiles with LRU cache
   - `constants.ts`, `capability.ts`, `rear-correction.ts`, `qr-code.ts` (fixed precomputed matrix)
-- `src/studio`: app state and actions (`store.ts` with zustand `useStudio`, `playback.ts`, `loading.ts`, `export.ts`, `range.ts`, `layout-mode.ts`, `consent.ts`, `pwa.ts`, `clip-search.ts`, `canvas-gestures.ts`)
+- `src/studio`: app state and actions (`store.ts` with zustand `useStudio`, `playback.ts`, `loading.ts`, `export.ts`, `range.ts`, `timeline.ts` (sentry folders play as one timeline), `motion.ts`, `privacy.ts`, `layout-mode.ts`, `consent.ts`, `pwa.ts`, `clip-search.ts`, `canvas-gestures.ts`)
 - `src/components`: atomic design layers (`atoms`, `molecules`, `organisms`, `templates`, `pages`)
 - `src/hooks`
 - `src/lib`: consent controller, platform helpers, `cn`, links
@@ -80,7 +84,8 @@ CT Dashcam Studio Web is a single-page browser app for playing and editing Tesla
 
 - Original code is licensed under `GPL-3.0-only`. Keep `LICENSE` byte-identical (a test checks its SHA-256).
 - Load Google Analytics only after opt-in via `src/lib/consent.ts` (Basic Consent Mode v2). Do not add any other tracking.
-- The service worker (built by `@unplugin-pwa/vite`, Workbox `generateSW`) caches only the app's own files and fonts, never user videos or telemetry. The production worker must not handle the `/dev/` path.
+- Face mosaic, plate mosaic and plate sharpening stay off by default. Load ONNX Runtime Web and the models only when one is turned on, keep all detection on the device, and never fall back to an export without the mosaic when loading fails. Do not add YOLO/Ultralytics (AGPL) models.
+- The service worker (built by `@unplugin-pwa/vite`, Workbox `generateSW`) caches only the app's own files and fonts, never user videos or telemetry. Do not precache the models or ONNX Runtime WebAssembly files. The production worker must not handle the `/dev/` path.
 - When runtime dependencies change, update `THIRD_PARTY_NOTICES.md` and regenerate `licenses/runtime-dependencies.txt` from `pnpm licenses list --prod` (keeping every bundled package's full license text). Keep notices for Mediabunny (`MPL-2.0`) and `@bufbuild/protobuf` (`Apache-2.0 AND BSD-3-Clause`).
 
 ## Deployment

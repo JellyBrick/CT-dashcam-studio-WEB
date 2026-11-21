@@ -5,6 +5,7 @@ import { DEFAULT_RESOLUTION, type ResolutionName } from '@/core/constants';
 import { DEFAULT_RENDER_OPTIONS, type RenderOptions } from '@/core/renderer';
 
 import type { ClipItem, FolderGroup } from '@/core/clip-scanner';
+import type { MotionEvent, MotionSensitivity } from '@/core/motion-scanner';
 import type { TranslationKey } from '@/i18n';
 
 const ViewModeSchema = z.enum(['auto', 'mobile', 'desktop']);
@@ -53,6 +54,13 @@ export interface ExportStatus {
   detail?: string;
 }
 
+export interface MotionState {
+  key: string;
+  pct: number;
+  events: MotionEvent[] | null;
+  failed: boolean;
+}
+
 export interface StudioState {
   folderGroups: FolderGroup[];
   activeClip: ClipItem | null;
@@ -63,6 +71,10 @@ export interface StudioState {
   endPoint: RangePoint | null;
   options: RenderOptions;
   autoNext: boolean;
+  motionEnabled: boolean;
+  motionSensitivity: MotionSensitivity;
+  motion: MotionState | null;
+  privacyLoading: boolean;
   resolution: ResolutionName;
   exportFps: number;
   loadProgress: LoadProgress | null;
@@ -125,6 +137,10 @@ export const useStudio = create<StudioState>()(() => ({
     telemetryOrder: savedTelemetryOrder ?? DEFAULT_RENDER_OPTIONS.telemetryOrder,
   },
   autoNext: savedAutoNext === '1',
+  motionEnabled: true,
+  motionSensitivity: 'normal',
+  motion: null,
+  privacyLoading: false,
   resolution: DEFAULT_RESOLUTION,
   exportFps: 30,
   loadProgress: null,

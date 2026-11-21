@@ -183,7 +183,7 @@ export const openDirectoryPicker = async (): Promise<boolean> => {
   }
 };
 
-const readEntry = async (entry: FileSystemEntry, path: string, files: File[]): Promise<void> => {
+const readEntry = async (entry: FileSystemEntry, path: string): Promise<File[]> => {
   if (entry.isFile) {
     const file = await new Promise<File>((resolve, reject) =>
       (entry as FileSystemFileEntry).file(resolve, reject),
@@ -191,27 +191,27 @@ const readEntry = async (entry: FileSystemEntry, path: string, files: File[]): P
     Object.defineProperty(file, 'webkitRelativePath', {
       value: path ? `${path}/${file.name}` : file.name,
     });
-    files.push(file);
-    return;
+    return [file];
   }
-  if (!entry.isDirectory) return;
+  if (!entry.isDirectory) return [];
   const reader = (entry as FileSystemDirectoryEntry).createReader();
   const childPath = path ? `${path}/${entry.name}` : entry.name;
+  const files: File[] = [];
   for (;;) {
     const batch = await new Promise<FileSystemEntry[]>((resolve, reject) =>
       reader.readEntries(resolve, reject),
     );
-    if (batch.length === 0) return;
-    for (const child of batch) await readEntry(child, childPath, files);
+    if (batch.length === 0) return files;
+    for (const nested of await Promise.all(batch.map((child) => readEntry(child, childPath)))) {
+      for (const file of nested) files.push(file);
+    }
   }
 };
 
 export const loadDroppedItems = async (items: DataTransferItemList) => {
   const dropped = Array.from(items, (item) => item.webkitGetAsEntry() ?? item.getAsFile());
-  const files: File[] = [];
-  for (const item of dropped) {
-    if (item instanceof File) files.push(item);
-    else if (item) await readEntry(item, '', files);
-  }
-  await loadFiles(files);
+  const nested = await Promise.all(
+    dropped.map(async (item) => (item instanceof File ? [item] : item ? readEntry(item, '') : [])),
+  );
+  await loadFiles(nested.flat());
 };

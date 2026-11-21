@@ -1,5 +1,5 @@
 import { offset, shift, useFloating } from '@floating-ui/react-dom';
-import { Show } from '@jellybrick/react-solid-flow';
+import { For, Show } from '@jellybrick/react-solid-flow';
 import { useGesture } from '@use-gesture/react';
 import { clamp } from 'es-toolkit';
 import { useRef, useState } from 'react';
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 interface TimelineTrackProps {
   progress: number;
   range: { left: number; width: number; start: boolean; end: boolean } | null;
+  marks?: { left: number; width: number }[];
   label: string;
   valueText: string;
   hoverText: (ratio: number) => string;
@@ -20,6 +21,7 @@ interface TimelineTrackProps {
 export const TimelineTrack = ({
   progress,
   range,
+  marks = [],
   label,
   valueText,
   hoverText,
@@ -112,6 +114,16 @@ export const TimelineTrack = ({
           className="absolute inset-y-0 left-0 rounded-full bg-primary"
           style={{ width: `${progress}%` }}
         />
+        <For each={marks}>
+          {({ left, width }) => (
+            <span
+              key={left}
+              aria-hidden
+              className="absolute inset-y-0 rounded-full bg-destructive/80"
+              style={{ left: `${left}%`, width: `max(${width}%, 3px)` }}
+            />
+          )}
+        </For>
         <div
           className="absolute top-1/2 size-3.5 -translate-1/2 rounded-full bg-foreground shadow-regular ring-2 ring-black/40"
           style={{ left: `${progress}%` }}

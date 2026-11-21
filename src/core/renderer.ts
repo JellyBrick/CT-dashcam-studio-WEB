@@ -23,6 +23,9 @@ export interface RenderOptions {
   qr: boolean;
   rear_crop: boolean;
   rear_correction: boolean;
+  face_blur: boolean;
+  plate_blur: boolean;
+  plate_enhance: boolean;
   brightness: number; // -100 ~ 100, default 0
   contrast: number; // 0.5 ~ 2.0, default 1.0
   playbackSpeed: number;
@@ -63,6 +66,9 @@ export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
   qr: true,
   rear_crop: false,
   rear_correction: false,
+  face_blur: false,
+  plate_blur: false,
+  plate_enhance: false,
   brightness: 0,
   contrast: 1.0,
   playbackSpeed: 1.0,

@@ -1,3 +1,5 @@
 minimumReleaseAge: 60
 savePrefix: ''
 trustPolicy: no-downgrade
+allowBuilds:
+  protobufjs: false

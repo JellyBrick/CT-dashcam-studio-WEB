@@ -18,7 +18,9 @@ import {
   openDialog,
   setStudio,
 } from './store';
+import { locateInTimeline, timelineOf } from './timeline';
 
+import type { PrivacyProcessor } from '@/core/privacy-filter';
 import type { SeiWorkerResponse } from '@/core/sei-worker';
 
 export const SOURCE_FPS = 36;
@@ -34,6 +36,12 @@ let isSelectingClip = false;
 let lastSyncCheckMs = 0;
 let lastRenderWallMs = 0;
 let previousLayout: LayoutName = 'front-focus';
+let previewPrivacy: PrivacyProcessor | null = null;
+
+export const setPreviewPrivacy = (processor: PrivacyProcessor | null) => {
+  previewPrivacy = processor;
+  previewPrivacy?.resetPreview();
+};
 
 const playbackSpeed = () => clampPlaybackSpeed(getStudio().options.playbackSpeed);
 
@@ -340,10 +348,16 @@ export const selectClip = async (clip: ClipItem) => {
         if (seq !== loadSeq) return;
         video.playbackRate = speed;
         if (isMaster) updateDuration(video);
-        if (!ios && !getStudio().isPlaying && video.currentTime < 0.002) {
+        const pendingSec = getStudio().currentTimeSec;
+        if ((pendingSec > 0 || !ios) && !getStudio().isPlaying && video.currentTime < 0.002) {
           try {
             const master = videoPool[masterKey];
-            video.currentTime = master && master.currentTime > 0 ? master.currentTime : 0.001;
+            video.currentTime =
+              pendingSec > 0
+                ? Math.min(video.duration || pendingSec, pendingSec)
+                : master && master.currentTime > 0
+                  ? master.currentTime
+                  : 0.001;
           } catch {}
         }
         if (!getStudio().isPlaying && getStudio().activeClip?.id === clip.id) renderFrame();
@@ -397,7 +411,9 @@ export const pauseAllVideos = (alignTimes = true) => {
 
 const handleMasterEnded = () => {
   pauseAllVideos(true);
-  if (getStudio().autoNext) nextClip(true).catch(reportError);
+  const view = timelineOf(getStudio());
+  const continues = view.activeIndex >= 0 && view.activeIndex < view.clips.length - 1;
+  if (getStudio().autoNext || continues) nextClip(true).catch(reportError);
 };
 
 export const applyPlaybackSpeed = () => {
@@ -447,7 +463,26 @@ export const seekTo = (targetSec: number) => {
   if (!isPlaying) renderFrame();
 };
 
-export const seekRelative = (deltaSec: number) => seekTo(getStudio().currentTimeSec + deltaSec);
+export const seekTimeline = async (targetSec: number) => {
+  if (isExporting()) return;
+  const state = getStudio();
+  const view = timelineOf(state);
+  if (view.clips.length === 0) return;
+  const { clip, sec } = locateInTimeline(view, clamp(targetSec, 0, view.totalSec));
+  if (clip === state.activeClip) {
+    seekTo(sec);
+    return;
+  }
+  const resume = state.isPlaying;
+  await selectClip(clip);
+  if (getStudio().activeClip !== clip) return;
+  seekTo(sec);
+  if (resume) togglePlay();
+};
+
+export const seekRelative = (deltaSec: number) => {
+  seekTimeline(timelineOf(getStudio()).positionSec + deltaSec).catch(reportError);
+};
 
 export const prevClip = async () => {
   const { activeClip } = getStudio();
@@ -468,7 +503,7 @@ export const nextClip = async (auto = false) => {
 
 const syncSecondaryVideos = (master: HTMLVideoElement) => {
   const masterTime = master.currentTime;
-  const maxSpeed = isMobileEnvironment() ? 4 : 16;
+  const maxSpeed = isMobileEnvironment() ? 6 : 16;
   const targetSpeed = playbackSpeed();
   const hardSeekThreshold = Math.max(0.4, 0.25 * targetSpeed);
   for (const video of getActiveVideos()) {
@@ -540,7 +575,7 @@ export const renderFrame = () => {
   }
   OverlayRenderer.render(
     canvas,
-    frames,
+    previewPrivacy?.active ? previewPrivacy.processPreview(frames) : frames,
     telemetry,
     activeClip?.timestampStr ?? '2026-10-07 00:00:00',
     currentTimeSec,

@@ -1,5 +1,3 @@
-import { clamp } from 'es-toolkit';
-
 import { i18n } from '@/i18n';
 
 // Ported & adapted from ui/main_window.py (scan_and_populate_tree)
@@ -41,6 +39,19 @@ export const yieldToCompositor = (): Promise<void> => {
     });
   }
   return new Promise<void>((resolve) => setTimeout(resolve, 0));
+};
+
+const YIELD_EVERY_MS = 16;
+
+const yieldTimer = () => {
+  let last = performance.now();
+  return {
+    due: () => performance.now() - last >= YIELD_EVERY_MS,
+    yield: async () => {
+      await yieldToCompositor();
+      last = performance.now();
+    },
+  };
 };
 
 export const formatFolderGroup = (folderName: string, clips?: ClipItem[]): FolderDisplayInfo => {
@@ -247,8 +258,7 @@ export const groupFilesIntoClips = async (
   >();
 
   const total = files.length;
-  // 소량(10~50개)부터 대용량까지 매끄러운 실시간 % 진행도 표시를 위한 가변 청크 크기
-  const CHUNK_SIZE = clamp(Math.floor(total / 10), 5, 25);
+  const timer = yieldTimer();
 
   for (let i = 0; i < total; i++) {
     const item = files[i];
@@ -307,12 +317,9 @@ export const groupFilesIntoClips = async (
       }
     }
 
-    if ((i + 1) % CHUNK_SIZE === 0 || i === total - 1) {
-      if (onProgress) {
-        onProgress(i + 1, total, mapByFolderAndTimestamp.size);
-      }
-      // iOS 및 모바일 브라우저에 페인트 프레임을 양보하여 진행도 UI가 실시간으로 갱신되도록 보장
-      await yieldToCompositor();
+    if (i === total - 1 || timer.due()) {
+      onProgress?.(i + 1, total, mapByFolderAndTimestamp.size);
+      await timer.yield();
     }
   }
 
@@ -426,6 +433,7 @@ export const scanFileSystemDirectory = async (
 ): Promise<ScannedFileItem[]> => {
   const items: ScannedFileItem[] = [];
   let scannedDirs = 0;
+  const timer = yieldTimer();
 
   const traverse = async (handle: FileSystemDirectoryHandle, currentPath: string) => {
     if (/EncryptedClips/i.test(handle.name) || /EncryptedClips/i.test(currentPath)) {
@@ -471,12 +479,8 @@ export const scanFileSystemDirectory = async (
       });
     }
 
-    if (onProgress) {
-      onProgress(items.length, scannedDirs);
-    }
-
-    // 모바일 브라우저 및 안드로이드/iOS에서 실시간 파일 카운트 갱신이 화면에 그려지도록 프레임 양보
-    await yieldToCompositor();
+    onProgress?.(items.length, scannedDirs);
+    if (timer.due()) await timer.yield();
 
     for (const dirEntry of dirEntries) {
       const dirPath = currentPath ? `${currentPath}/${dirEntry.name}` : dirEntry.name;

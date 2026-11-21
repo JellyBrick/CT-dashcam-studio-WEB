@@ -26,8 +26,8 @@ The React interface bundles the following packages. Versions are locked in pnpm-
 | @floating-ui/utils | 0.2.12 | MIT | licenses/floating-ui-utils-MIT.txt |
 | reselect | 5.3.0 | MIT | licenses/reselect-MIT.txt |
 | use-sync-external-store | 1.7.0 | MIT | licenses/use-sync-external-store-MIT.txt |
-| i18next | 27.1.3 | MIT | licenses/i18next-MIT.txt |
-| react-i18next | 18.0.2 | MIT | licenses/react-i18next-MIT.txt |
+| i18next | 27.2.2 | MIT | licenses/i18next-MIT.txt |
+| react-i18next | 18.0.3 | MIT | licenses/react-i18next-MIT.txt |
 | html-parse-stringify | 4.0.1 | MIT | licenses/html-parse-stringify-MIT.txt |
 | @babel/runtime | 8.1.2 | MIT | licenses/babel-runtime-MIT.txt |
 | zustand | 5.1.0 | MIT | licenses/zustand-MIT.txt |
@@ -48,14 +48,35 @@ The React interface bundles the following packages. Versions are locked in pnpm-
 | @use-gesture/react | 10.3.1 | MIT | licenses/runtime-dependencies.txt |
 | i18next-browser-languagedetector | 8.3.1 | MIT | licenses/runtime-dependencies.txt |
 | @bufbuild/protobuf | 2.17.0 | Apache-2.0 AND BSD-3-Clause | licenses/runtime-dependencies.txt |
+| onnxruntime-web | 1.31.1 | MIT | licenses/runtime-dependencies.txt |
+| onnxruntime-common | 1.31.1 | MIT | licenses/runtime-dependencies.txt |
+| protobufjs and @protobufjs/* | 7.6.6 | BSD-3-Clause | licenses/runtime-dependencies.txt |
+| flatbuffers | 25.9.23 | Apache-2.0 | licenses/runtime-dependencies.txt |
+| long | 5.3.2 | Apache-2.0 | licenses/runtime-dependencies.txt |
+| guid-typescript | 1.0.9 | ISC | licenses/runtime-dependencies.txt |
+| platform | 1.3.6 | MIT | licenses/runtime-dependencies.txt |
 
 licenses/runtime-dependencies.txt holds the original license text of every package bundled into the site, including the packages these libraries depend on (for example the unified, remark, micromark, mdast and hast packages behind react-markdown) and the Workbox runtime that the service worker build bundles from @vite-pwa/workbox-swkit. It is generated from `pnpm licenses list --prod`; regenerate it whenever runtime dependencies change. @bufbuild/protobuf publishes its terms in source headers instead of a license file: Apache-2.0 (Buf Technologies) for most files and BSD-3-Clause (Google) for the wire-format code; both headers and the Apache-2.0 text are reproduced in that file.
 | sonner | 2.0.8 | MIT | licenses/sonner-MIT.txt |
-| lucide-react | 1.73.0 | ISC | licenses/lucide-react-ISC.txt |
+| lucide-react | 1.77.0 | ISC | licenses/lucide-react-ISC.txt |
 | clsx | 2.1.1 | MIT | licenses/clsx-MIT.txt |
-| tailwind-merge | 3.7.0 | MIT | licenses/tailwind-merge-MIT.txt |
+| tailwind-merge | 3.7.1 | MIT | licenses/tailwind-merge-MIT.txt |
 | class-variance-authority | 0.7.1 | Apache-2.0 | licenses/class-variance-authority-Apache-2.0.txt |
 | tw-animate-css | 1.4.0 | MIT | licenses/tw-animate-css-MIT.txt |
+
+## Distributed runtime code: ONNX Runtime Web 1.31.1
+
+Source: https://github.com/microsoft/onnxruntime
+MIT, copyright (c) Microsoft Corporation. ONNX Runtime Web runs the face and vehicle detection models. It is loaded only when the viewer turns on face mosaic, license plate mosaic or license plate sharpening. The site then serves its JavaScript and its WebAssembly binary (`ort-wasm-simd-threaded.asyncify.wasm`) from its own origin. The npm package ships no license file, so its MIT text is reproduced in licenses/runtime-dependencies.txt from the bundle header and the upstream repository.
+
+The WebAssembly binary is compiled from ONNX Runtime together with the third-party libraries that ONNX Runtime lists in https://github.com/microsoft/onnxruntime/blob/main/ThirdPartyNotices.txt . Those full texts are not yet reproduced in licenses/; see LICENSE_AUDIT.md.
+
+## Distributed models
+
+Both models run in the browser and are served from the site's own origin only after the matching option is turned on. Neither is a YOLO or Ultralytics model.
+
+- **YuNet face detector:** `src/assets/models/face-yunet.onnx` (230,038 bytes, SHA-256 `ab67ff7a5c8a16f790380ac4c7ef76117a7c7461246e9062c4dd1c1b24f8859d`). It is the OpenCV Zoo `face_detection_yunet_2023mar.onnx` (https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet) with its input height and width changed from fixed to variable. It was restored from this repository's own history (commit 8ea5052), whose note says only the input size was changed and that the boxes match OpenCV's FaceDetectorYN. MIT, copyright (c) 2020 Shiqi Yu; full text in licenses/yunet-MIT.txt.
+- **D-FINE nano vehicle detector:** `src/assets/models/vehicle-dfine-n.onnx` (15,434,994 bytes, SHA-256 `f7febe9695cd6f71120abbeb0642d3d6b6c6bcc36f0ba1d79b66d302b5860814`), the unmodified `onnx/model.onnx` from https://huggingface.co/onnx-community/dfine-nano-coco-ONNX , an export of https://huggingface.co/ustc-community/dfine-nano-coco from the D-FINE project (https://github.com/Peterande/D-FINE). Apache-2.0; full text and source details in licenses/d-fine-Apache-2.0.txt. It was trained on COCO 2017, whose annotations are CC BY 4.0. Only its car, motorcycle, bus and truck results are used, to find the area where a license plate can be.
 
 ## Distributed font: Pretendard 1.3.9
 
@@ -65,7 +86,7 @@ Copyright (c) 2021 Kil Hyung-jin, with Reserved Font Name Pretendard. The variab
 ## Python predecessor and ports
 
 Source: https://github.com/mhsong282828221212123123123/CT-dashcam-studio
-Headers identify ports of core/constants.py, decoder.py, map_loader.py, renderer.py, exporter.py, scanner.py and ui/main_window.py. The sibling repository LICENSE carries the following MIT notice. Preserving it does not certify that every upstream asset or copied algorithm has been cleared.
+Headers identify ports of core/constants.py, decoder.py, map_loader.py, renderer.py, exporter.py, scanner.py, privacy_filter.py, plate_enhancer.py and ui/main_window.py. The sibling repository LICENSE carries the following MIT notice. Preserving it does not certify that every upstream asset or copied algorithm has been cleared.
 
 MIT License
 

@@ -8,10 +8,12 @@ import { Toaster } from '@/components/molecules/sonner';
 import { TooltipProvider } from '@/components/molecules/tooltip';
 import { StudioPage } from '@/components/pages/studio-page';
 import { watchLayoutMode } from '@/studio/layout-mode';
+import { watchMotion } from '@/studio/motion';
 
 const root = document.getElementById('app');
 if (root) {
   watchLayoutMode();
+  watchMotion();
   createRoot(root).render(
     <StrictMode>
       <QueryClientProvider client={new QueryClient()}>

@@ -2,10 +2,12 @@
 import { i18n } from '@/i18n';
 
 const MAX_CACHED_TILES = 128;
+const RETRY_FAILED_MS = 30_000;
 
 export class OpenStreetMapTileLoader {
   private static tileCache: Map<string, HTMLImageElement> = new Map();
   private static pendingFetches: Map<string, Promise<HTMLImageElement | null>> = new Map();
+  private static failedAt: Map<string, number> = new Map();
 
   static latLonToTile(lat: number, lon: number, zoom: number): { x: number; y: number } {
     const latRad = (lat * Math.PI) / 180;
@@ -30,6 +32,8 @@ export class OpenStreetMapTileLoader {
     if (this.pendingFetches.has(key)) {
       return this.pendingFetches.get(key)!;
     }
+    const failed = this.failedAt.get(key);
+    if (failed !== undefined && performance.now() - failed < RETRY_FAILED_MS) return null;
 
     const fetchPromise = (async () => {
       try {
@@ -41,12 +45,14 @@ export class OpenStreetMapTileLoader {
           img.onerror = () => reject(new Error('Tile load error'));
           img.src = url;
         });
+        this.failedAt.delete(key);
         this.tileCache.set(key, img);
         if (this.tileCache.size > MAX_CACHED_TILES) {
           this.tileCache.delete(this.tileCache.keys().next().value!);
         }
         return img;
       } catch {
+        this.failedAt.set(key, performance.now());
         return null;
       } finally {
         this.pendingFetches.delete(key);

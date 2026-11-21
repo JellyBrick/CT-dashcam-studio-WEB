@@ -1,5 +1,14 @@
 import { For, Show } from '@jellybrick/react-solid-flow';
-import { ChevronDown, Pause, Play, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+  RotateCcw,
+  SkipBack,
+  SkipForward,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -15,7 +24,8 @@ import {
 import { TimelineTrack } from '@/components/molecules/timeline-track';
 import { useLayoutMode } from '@/hooks/use-layout-mode';
 import { cn } from '@/lib/utils';
-import { nextClip, prevClip, seekTo, setPlaybackSpeed, togglePlay } from '@/studio/playback';
+import { jumpToMotion, setMotionEnabled, setMotionSensitivity } from '@/studio/motion';
+import { nextClip, prevClip, seekTimeline, setPlaybackSpeed, togglePlay } from '@/studio/playback';
 import {
   activeRangeOverlay,
   formatTimecode,
@@ -24,18 +34,47 @@ import {
   setInPoint,
   setOutPoint,
 } from '@/studio/range';
-import { getStudio, setAutoNext, useStudio } from '@/studio/store';
+import { getStudio, setAutoNext, type StudioState, useStudio } from '@/studio/store';
+import { isSentryClip, timelineKey, timelineOf } from '@/studio/timeline';
 
 import { plainLabel } from './panel-tabs';
 
-const PREVIEW_SPEEDS = [0.5, 1, 1.2, 1.5, 2, 2.5, 3, 4];
+import type { MotionSensitivity } from '@/core/motion-scanner';
+import type { TranslationKey } from '@/i18n';
+import type { TFunction } from 'i18next';
+
+const PREVIEW_SPEEDS = [0.5, 1, 1.2, 1.5, 2, 2.5, 3, 4, 5];
+
+const SENSITIVITY_KEYS: Record<MotionSensitivity, TranslationKey> = {
+  low: 'sens_low',
+  normal: 'sens_normal',
+  high: 'sens_high',
+  ultra: 'sens_ultra',
+};
+
+const motionStatus = ({ motion }: StudioState, t: TFunction) => {
+  if (!motion) return '';
+  if (motion.failed) return t('motion_failed');
+  if (!motion.events) return t('motion_scanning', { 0: motion.pct });
+  return t('motion_detected', { 0: motion.events.length });
+};
 
 const Scrubber = () => {
   const { t } = useTranslation();
-  const currentTimeSec = useStudio((state) => state.currentTimeSec);
-  const durationSec = useStudio((state) => state.durationSec);
+  const currentTimeSec = useStudio((state) => timelineOf(state).positionSec);
+  const durationSec = useStudio((state) => timelineOf(state).totalSec);
   const range = useStudio(useShallow(activeRangeOverlay));
   const exporting = useStudio((state) => state.exportProgress !== null);
+  const motionEvents = useStudio((state) =>
+    state.motion && state.motion.key === timelineKey(state) ? state.motion.events : null,
+  );
+  const marks =
+    durationSec > 0
+      ? (motionEvents ?? []).map(({ startSec, endSec }) => ({
+          left: (startSec / durationSec) * 100,
+          width: ((endSec - startSec) / durationSec) * 100,
+        }))
+      : [];
   return (
     <div className="flex items-center gap-3 text-body typo-number">
       <span className="w-14 shrink-0">{formatTimecode(currentTimeSec)}</span>
@@ -45,8 +84,11 @@ const Scrubber = () => {
         hoverText={(ratio) => formatTimecode(ratio * durationSec)}
         progress={durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0}
         range={range}
+        marks={marks}
         disabled={exporting}
-        onSeek={(ratio) => seekTo(ratio * getStudio().durationSec)}
+        onSeek={(ratio) => {
+          seekTimeline(ratio * timelineOf(getStudio()).totalSec).catch(reportError);
+        }}
         className="flex-1"
       />
       <span className="w-14 shrink-0 text-right text-muted-foreground">
@@ -178,10 +220,84 @@ const AutoNext = () => {
   );
 };
 
+const SensitivityMenu = () => {
+  const { t } = useTranslation();
+  const sensitivity = useStudio((state) => state.motionSensitivity);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="solid" size="sm" />}>
+        {t('lbl_sensitivity')}: {t(SENSITIVITY_KEYS[sensitivity])}
+        <ChevronDown className="size-3.5 text-muted-foreground" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side="top" align="start" className="min-w-28">
+        <DropdownMenuRadioGroup
+          value={sensitivity}
+          onValueChange={(value: MotionSensitivity) => setMotionSensitivity(value)}
+        >
+          <For each={Object.keys(SENSITIVITY_KEYS) as MotionSensitivity[]}>
+            {(value) => (
+              <DropdownMenuRadioItem key={value} value={value}>
+                {t(SENSITIVITY_KEYS[value])}
+              </DropdownMenuRadioItem>
+            )}
+          </For>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+const MotionControls = () => {
+  const { t } = useTranslation();
+  const sentry = useStudio((state) => isSentryClip(state.activeClip));
+  const enabled = useStudio((state) => state.motionEnabled);
+  const status = useStudio((state) => motionStatus(state, t));
+  const hasEvents = useStudio((state) => (state.motion?.events?.length ?? 0) > 0);
+  return (
+    <Show when={sentry}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <label className="flex cursor-pointer items-center gap-2 text-body text-muted-foreground">
+          <Switch checked={enabled} onCheckedChange={setMotionEnabled} />
+          {t('chk_motion')}
+        </label>
+        <Show when={enabled}>
+          <SensitivityMenu />
+          <span className="min-w-0 truncate text-body text-muted-foreground typo-number">
+            {status}
+          </span>
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <Button
+              variant="quiet"
+              size="sm"
+              title={t('tip_prev_motion')}
+              disabled={!hasEvents}
+              onClick={() => jumpToMotion(-1)}
+            >
+              <ChevronLeft />
+              {t('btn_prev_motion')}
+            </Button>
+            <Button
+              variant="quiet"
+              size="sm"
+              title={t('tip_next_motion')}
+              disabled={!hasEvents}
+              onClick={() => jumpToMotion(1)}
+            >
+              {t('btn_next_motion')}
+              <ChevronRight />
+            </Button>
+          </div>
+        </Show>
+      </div>
+    </Show>
+  );
+};
+
 export const TimelineDeck = ({ className }: { className?: string }) => {
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       <Scrubber />
+      <MotionControls />
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <Transport />
         <RangeControls />

@@ -11,13 +11,15 @@ import { cn } from '@/lib/utils';
 import { openTutorial } from '@/studio/playback';
 import { formatTimecode } from '@/studio/range';
 import { useStudio } from '@/studio/store';
+import { timelineOf } from '@/studio/timeline';
 
 import { LayoutMenu } from './layout-menu';
 
 const ClipTitle = ({ compact }: { compact: boolean }) => {
   const { t } = useTranslation();
   const clip = useStudio((state) => state.activeClip);
-  const durationSec = useStudio((state) => state.durationSec);
+  const durationSec = useStudio((state) => timelineOf(state).totalSec);
+  const merged = useStudio((state) => timelineOf(state).clips.length);
   const titleClass = compact ? 'text-head3' : 'text-head2';
   return (
     <Show when={clip} fallback={<h1 className={cn('truncate', titleClass)}>CT Dashcam Studio</h1>}>
@@ -33,6 +35,7 @@ const ClipTitle = ({ compact }: { compact: boolean }) => {
             {formatFolderGroup(clip.folder, []).displayTitle.split(' - ')[0]} ·{' '}
             {Object.keys(clip.cams).length}
             {t('tag_channels')} · {formatTimecode(durationSec)}
+            <Show when={merged > 1}> · {t('merged_clips', { 0: merged })}</Show>
           </p>
         </div>
       )}

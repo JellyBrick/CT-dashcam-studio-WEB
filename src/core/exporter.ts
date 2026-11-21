@@ -17,11 +17,14 @@ import {
 import { i18n } from '@/i18n';
 import { isAndroid, isIOSOrAndroid } from '@/lib/platform';
 
-import { type ClipItem, ensureClipFiles } from './clip-scanner';
+import { LOOKAHEAD_SEC } from './box-tracker';
+import { type ClipItem, ensureClipFiles, parseTimestampSec } from './clip-scanner';
 import { clampSegmentToMedia } from './clip-timing';
 import { RESOLUTIONS, type CameraKey } from './constants';
 import { OverlayRenderer, type RenderOptions } from './renderer';
 import { DEFAULT_TELEMETRY, type RealTeslaSEIDecoder } from './sei-decoder';
+
+import type { PrivacyProcessor } from './privacy-filter';
 
 export interface ExportClipSegment {
   clip: ClipItem;
@@ -39,6 +42,8 @@ export interface MultiClipExportConfig {
   resolutionName: keyof typeof RESOLUTIONS;
   options: RenderOptions;
   onProgress: (percent: number, currentSegmentIdx: number, totalSegments: number) => void;
+  privacy?: PrivacyProcessor | null;
+  onAnalysisProgress?: (percent: number, currentSegmentIdx: number, totalSegments: number) => void;
 }
 
 const pickEncodingConfig = async (
@@ -81,6 +86,69 @@ export class WebCodecsExporter {
     this.isCancelled = true;
   }
 
+  private async openTracks(clip: ClipItem, options: RenderOptions) {
+    await ensureClipFiles(clip);
+    const inputs: Input[] = [];
+    const opened = await Promise.all(
+      this.getActiveCamKeys(options).map(async (key) => {
+        const file = clip.cams[key];
+        if (!file) return null;
+        const input = new Input({ source: new BlobSource(file), formats: [MP4] });
+        inputs.push(input);
+        try {
+          const track = await input.getPrimaryVideoTrack();
+          return track ? { key, track } : null;
+        } catch (error) {
+          console.warn(`[Export] Skipping unreadable ${key} camera:`, error);
+          return null;
+        }
+      }),
+    );
+    return { inputs, tracks: compact(opened) };
+  }
+
+  private async analyzePrivacy(config: MultiClipExportConfig, privacy: PrivacyProcessor) {
+    privacy.beginExportAnalysis();
+    const step = Math.min(0.125, 4 / config.sourceFps);
+    for (let segIdx = 0; segIdx < config.segments.length; segIdx++) {
+      const segment = config.segments[segIdx];
+      const { inputs, tracks } = await this.openTracks(segment.clip, config.options);
+      try {
+        privacy.beginExportSegment(step);
+        const base = parseTimestampSec(segment.clip.timestampRaw);
+        for (let camIdx = 0; camIdx < tracks.length; camIdx++) {
+          const { key, track } = tracks[camIdx];
+          const start = Math.max(0, segment.startSec - LOOKAHEAD_SEC);
+          const end = Math.min(segment.endSec + LOOKAHEAD_SEC, await track.computeDuration());
+          const times = Array.from(
+            { length: Math.max(1, Math.ceil((end - start) / step)) },
+            (_, i) => start + i * step,
+          );
+          let done = 0;
+          for await (const frame of new CanvasSink(track, { poolSize: 1 }).canvasesAtTimestamps(
+            times,
+          )) {
+            if (this.isCancelled) throw new Error(i18n.t('error_export_cancelled'));
+            if (frame) await privacy.analyzeExport(key, frame.canvas, base + frame.timestamp);
+            done++;
+            config.onAnalysisProgress?.(
+              Math.round(
+                ((segIdx + (camIdx + done / times.length) / tracks.length) /
+                  config.segments.length) *
+                  100,
+              ),
+              segIdx + 1,
+              config.segments.length,
+            );
+          }
+        }
+      } finally {
+        for (const input of inputs) input.dispose();
+      }
+    }
+    privacy.finishExportAnalysis();
+  }
+
   async exportMultiClip(config: MultiClipExportConfig): Promise<Blob> {
     this.isCancelled = false;
 
@@ -119,6 +187,8 @@ export class WebCodecsExporter {
     output.addVideoTrack(source, { frameRate: config.targetFps });
 
     try {
+      const privacy = config.privacy?.active ? config.privacy : null;
+      if (privacy) await this.analyzePrivacy(config, privacy);
       await output.start();
       config.onProgress(0, 1, config.segments.length);
 
@@ -134,26 +204,8 @@ export class WebCodecsExporter {
         if (this.isCancelled) break;
         let segment = config.segments[segIdx];
 
-        await ensureClipFiles(segment.clip);
-        const inputs: Input[] = [];
+        const { inputs, tracks } = await this.openTracks(segment.clip, config.options);
         try {
-          const opened = await Promise.all(
-            this.getActiveCamKeys(config.options).map(async (key) => {
-              const file = segment.clip.cams[key];
-              if (!file) return null;
-              const input = new Input({ source: new BlobSource(file), formats: [MP4] });
-              inputs.push(input);
-              try {
-                const track = await input.getPrimaryVideoTrack();
-                return track ? { key, track } : null;
-              } catch (error) {
-                console.warn(`[Export] Skipping unreadable ${key} camera:`, error);
-                return null;
-              }
-            }),
-          );
-          const tracks = compact(opened);
-
           // A SavedClip may end after only a few seconds. Never encode the scanner's
           // 60-second estimate after the master video has already ended.
           const master = tracks.find(({ key }) => key === 'front') ?? tracks[0];
@@ -167,6 +219,7 @@ export class WebCodecsExporter {
           segment = actualSegment;
 
           const decoder = await config.getClipDecoder(segment.clip);
+          const base = parseTimestampSec(segment.clip.timestampRaw);
           const { startSec, endSec } = segment;
           const sourceTimes = Array.from(
             { length: Math.ceil((endSec - startSec - 1e-9) / frameStepSec) },
@@ -180,11 +233,12 @@ export class WebCodecsExporter {
           for (const sourceSec of sourceTimes) {
             if (this.isCancelled) break;
             const results = await Promise.all(streams.map(({ canvases }) => canvases.next()));
-            const frames: Partial<Record<CameraKey, CanvasImageSource>> = {};
+            const decoded: Partial<Record<CameraKey, CanvasImageSource>> = {};
             streams.forEach(({ key }, i) => {
               const frame = results[i].value;
-              if (frame) frames[key] = frame.canvas;
+              if (frame) decoded[key] = frame.canvas;
             });
+            const frames = privacy ? privacy.processExport(decoded, base + sourceSec) : decoded;
 
             const currentFrameIdx = Math.round(sourceSec * config.sourceFps);
             const telemetry = decoder

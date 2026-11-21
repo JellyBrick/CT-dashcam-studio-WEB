@@ -14,6 +14,7 @@ import {
   selectClip,
   SOURCE_FPS,
 } from './playback';
+import { ensurePrivacy } from './privacy';
 import { buildTargetClipChain } from './range';
 import { getStudio, setStudio, type StudioState } from './store';
 
@@ -27,7 +28,7 @@ const loadExporter = async () => {
   return (exporter ??= new WebCodecsExporter());
 };
 
-export const EXPORT_SPEEDS = [0.5, 1, 1.5, 2, 4] as const;
+export const EXPORT_SPEEDS = [0.5, 1, 1.5, 2, 4, 5] as const;
 
 export const fpsOptions = (speed: number, mobile: boolean, t: TFunction) => {
   const base = SOURCE_FPS;
@@ -107,6 +108,39 @@ const download = (blob: Blob, fileName: string) => {
   }, 60_000);
 };
 
+type SavePickerWindow = Window & {
+  showSaveFilePicker?: (options: {
+    suggestedName: string;
+    types: { description: string; accept: Record<string, string[]> }[];
+  }) => Promise<FileSystemFileHandle>;
+};
+
+const pickSaveFile = (suggestedName: string) => {
+  const picker = (window as SavePickerWindow).showSaveFilePicker;
+  if (!picker || isIOSOrAndroid()) return null;
+  return picker
+    .call(window, {
+      suggestedName,
+      types: [{ description: 'MP4', accept: { 'video/mp4': ['.mp4'] } }],
+    })
+    .catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      console.warn('[Export] Save picker unavailable, downloading instead:', error);
+      return null;
+    });
+};
+
+const save = async (blob: Blob, fileName: string, handle: FileSystemFileHandle | null) => {
+  if (!handle) {
+    download(blob, fileName);
+    return;
+  }
+  const writable = await handle.createWritable();
+  await writable.write(blob);
+  await writable.close();
+  toast.success(i18n.t('export_saved_to', { 0: handle.name }));
+};
+
 const requestWakeLock = async () => {
   try {
     return await navigator.wakeLock?.request('screen');
@@ -138,6 +172,17 @@ export const startExport = async ({ confirmed = false } = {}) => {
     return;
   }
 
+  const fileName =
+    segments.length > 1
+      ? `TeslaCam_${first.clip.timestampRaw}_to_${last.clip.timestampRaw}_export.mp4`
+      : `TeslaCam_${first.clip.timestampRaw}_export.mp4`;
+  let handle: FileSystemFileHandle | null;
+  try {
+    handle = await pickSaveFile(fileName);
+  } catch {
+    return;
+  }
+
   const speed = options.exportSpeed ?? 1;
   pauseAllVideos(true);
   releasePreviewDecoders();
@@ -158,6 +203,7 @@ export const startExport = async ({ confirmed = false } = {}) => {
   const wakeLock = await requestWakeLock();
 
   try {
+    const privacy = await ensurePrivacy();
     const blob = await (
       await loadExporter()
     ).exportMultiClip({
@@ -168,6 +214,14 @@ export const startExport = async ({ confirmed = false } = {}) => {
       exportSpeed: speed,
       resolutionName: resolution,
       options: getStudio().options,
+      privacy,
+      onAnalysisProgress: (pct, segment, totalSegments) =>
+        setStudio({
+          exportStatus: {
+            key: 'status_face_analysis',
+            params: { 0: pct, 1: segment, 2: totalSegments },
+          },
+        }),
       onProgress: (pct, segment, totalSegments) =>
         setStudio((current) => ({
           exportProgress: current.exportProgress && {
@@ -182,11 +236,7 @@ export const startExport = async ({ confirmed = false } = {}) => {
           },
         })),
     });
-    const fileName =
-      segments.length > 1
-        ? `TeslaCam_${first.clip.timestampRaw}_to_${last.clip.timestampRaw}_export.mp4`
-        : `TeslaCam_${first.clip.timestampRaw}_export.mp4`;
-    download(blob, fileName);
+    await save(blob, fileName, handle);
     setStudio({ exportStatus: { key: 'status_success' } });
     if (isAndroid()) toast.success(i18n.t('export_success_alert'), { duration: 10_000 });
   } catch (error) {

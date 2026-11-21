@@ -31,6 +31,7 @@ const SPEED_LABEL_KEYS: Record<(typeof EXPORT_SPEEDS)[number], TranslationKey> =
   1.5: 'speed_15',
   2: 'speed_20',
   4: 'speed_40',
+  5: 'speed_50',
 };
 
 const Field = ({ label, children }: { label: string; children: ReactNode }) => {

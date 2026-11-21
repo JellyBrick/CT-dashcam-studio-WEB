@@ -11,6 +11,7 @@ import {
   setStudio,
   type StudioState,
 } from './store';
+import { timelineOf } from './timeline';
 
 import type { ClipItem } from '@/core/clip-scanner';
 import type { ExportClipSegment } from '@/core/exporter';
@@ -91,9 +92,12 @@ export const resetRange = () => setStudio({ startPoint: null, endPoint: null });
 export const buildTargetClipChain = (state: StudioState = getStudio()): ExportClipSegment[] => {
   const { activeClip, startPoint, endPoint, durationSec } = state;
   if (!activeClip) return [];
-  const whole = [
-    { clip: activeClip, startSec: 0, endSec: durationSec, baseTimeStr: activeClip.timestampStr },
-  ];
+  const whole = timelineOf(state).clips.map((clip) => ({
+    clip,
+    startSec: 0,
+    endSec: clip === activeClip ? durationSec : clip.durationSec || 60,
+    baseTimeStr: clip.timestampStr,
+  }));
   if (!startPoint && !endPoint) return whole;
 
   const clips = allClips(state);
@@ -129,26 +133,24 @@ export const isClipInRange = (clip: ClipItem, bounds: { startMs: number; endMs: 
   );
 
 export const activeRangeOverlay = (state: StudioState) => {
-  const { activeClip, startPoint, endPoint, durationSec } = state;
-  if (!activeClip || durationSec <= 0) return null;
-  const clipStart = parseClipTimeMs(activeClip.timestampRaw);
-  const clipEnd = clipStart + durationSec * 1000;
-  const isStart = startPoint?.clipId === activeClip.id;
-  const isEnd = endPoint?.clipId === activeClip.id;
-  const afterStart = !startPoint || clipStart >= startPoint.absTimeMs;
-  const beforeEnd = !endPoint || clipEnd <= endPoint.absTimeMs;
-  if (!startPoint && !endPoint) return null;
-  if (!isStart && !isEnd && !(afterStart && beforeEnd)) return null;
-
-  const inSec = isStart && startPoint ? startPoint.sec : 0;
-  const outSec = isEnd && endPoint ? endPoint.sec : durationSec;
-  if (inSec > outSec) return null;
-  const toPct = (sec: number) => clamp((sec / durationSec) * 100, 0, 100);
+  const { startPoint, endPoint } = state;
+  const view = timelineOf(state);
+  if ((!startPoint && !endPoint) || view.totalSec <= 0) return null;
+  const startMs = parseClipTimeMs(view.clips[0].timestampRaw);
+  const locate = (point: RangePoint) => {
+    const index = view.clips.findIndex((clip) => clip.id === point.clipId);
+    if (index >= 0) return view.offsets[index] + point.sec;
+    return point.absTimeMs < startMs ? -1 : view.totalSec + 1;
+  };
+  const inSec = startPoint ? locate(startPoint) : -1;
+  const outSec = endPoint ? locate(endPoint) : view.totalSec + 1;
+  if (outSec < 0 || inSec > view.totalSec || inSec > outSec) return null;
+  const toPct = (sec: number) => clamp((sec / view.totalSec) * 100, 0, 100);
   return {
     left: toPct(inSec),
     width: Math.max(0.2, toPct(outSec) - toPct(inSec)),
-    start: isStart,
-    end: isEnd,
+    start: inSec >= 0,
+    end: outSec <= view.totalSec,
   };
 };
 
@@ -160,7 +162,7 @@ const formatClock = (ms: number) => {
 };
 
 export const rangeSummary = (state: StudioState, t: TFunction): string => {
-  const { activeClip, startPoint, endPoint, durationSec } = state;
+  const { activeClip, startPoint, endPoint } = state;
   if (!activeClip) return t('range_unspecified');
   if (startPoint && endPoint) {
     const chain = buildTargetClipChain(state);
@@ -173,7 +175,7 @@ export const rangeSummary = (state: StudioState, t: TFunction): string => {
   }
   if (startPoint) return t('range_need_out', { 0: formatClock(startPoint.absTimeMs) });
   if (endPoint) return t('range_need_in', { 0: formatClock(endPoint.absTimeMs) });
-  return t('range_unspecified_full', { 0: durationSec.toFixed(1) });
+  return t('range_unspecified_full', { 0: timelineOf(state).totalSec.toFixed(1) });
 };
 
 export const formatTimecode = (sec: number) => {

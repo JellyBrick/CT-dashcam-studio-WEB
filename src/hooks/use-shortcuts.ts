@@ -1,6 +1,6 @@
 import { type HotkeyCallback, type Options, useHotkeys } from 'react-hotkeys-hook';
 
-import { nextClip, prevClip, seekRelative, seekTo, togglePlay } from '@/studio/playback';
+import { nextClip, prevClip, seekRelative, seekTimeline, togglePlay } from '@/studio/playback';
 import { setInPoint, setOutPoint } from '@/studio/range';
 import { getStudio, isExporting, openDialog } from '@/studio/store';
 
@@ -13,7 +13,9 @@ const actions: Record<string, (event: KeyboardEvent) => void> = {
   space: togglePlay,
   left: (event) => seekRelative(event.shiftKey ? -5 : -1),
   right: (event) => seekRelative(event.shiftKey ? 5 : 1),
-  home: () => seekTo(0),
+  home: () => {
+    seekTimeline(0).catch(reportError);
+  },
   bracketleft: () => {
     prevClip().catch(reportError);
   },
